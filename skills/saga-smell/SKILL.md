@@ -9,7 +9,7 @@ description: >
   Trigger phrases: "review for saga smells", "check compensation", "saga
   review", "distributed transaction review", "check this for consistency issues".
 version: 1.2.0
-author: qbyteconsulting
+author: John Coleman
 license: MIT
 allowed-tools: Read, Grep, Glob
 ---

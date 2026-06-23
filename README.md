@@ -27,6 +27,34 @@ Eight detection rules covering the full surface area of multi-effect failure:
 
 ---
 
+## How it evaluates findings
+
+Pattern matching alone produces false positives when compensation is provided
+by a durable execution framework, a transactional outbox, idempotency-by-design,
+or a coordinator not visible in the scanned scope. The skill uses an
+**Analysis of Competing Hypotheses (ACH)** pass to resolve this ambiguity before
+reporting.
+
+When a rule fires and competing signals are present (framework imports, outbox
+writes, idempotency keys, saga annotations, etc.), the skill builds an evidence
+matrix across six alternative hypotheses — genuine smell, framework-compensated,
+transactional outbox, idempotent-by-design, compensation-out-of-scope, and
+distributed transaction — and only flags `H_smell` when it is the
+least-refuted winner.
+
+Each finding carries a confidence level:
+
+| Confidence | Meaning | Effect on severity |
+|---|---|---|
+| `CONFIRMED` | H_smell won the matrix — no credible alternative | Full severity |
+| `UNCERTAIN` | A competing hypothesis has supporting evidence | Demoted one tier; prefixed `⚠ POSSIBLE` |
+| `POSSIBLE` | Evidence is exactly tied | Same severity; ambiguity noted |
+
+Clear-cut cases (bare effect sequences with no framework signals) skip the ACH
+pass entirely and are flagged directly.
+
+---
+
 ## Installation
 
 ### Option A — project skill (recommended for teams)

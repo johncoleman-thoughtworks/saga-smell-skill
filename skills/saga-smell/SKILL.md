@@ -8,7 +8,7 @@ description: >
   I/O, processes payments, handles events, or coordinates across services.
   Trigger phrases: "review for saga smells", "check compensation", "saga
   review", "distributed transaction review", "check this for consistency issues".
-version: 1.3.0
+version: 1.4.0
 author: John Coleman
 license: MIT
 allowed-tools: Read, Grep, Glob
@@ -16,8 +16,90 @@ allowed-tools: Read, Grep, Glob
 
 # Saga smell detector
 
-You are performing a saga smell analysis. Read the detection rules and
-reference material, then apply them to the target code.
+You are performing a saga smell analysis. Follow the scanning protocol below
+before applying any detection rules.
+
+---
+
+## Scanning protocol
+
+Execute these steps in order. Do not begin writing findings until Step 5.
+
+### Step 1 — Enumerate all source files
+
+Use Glob to list every source file in scope. Collect extensions relevant to
+the target codebase (`.java`, `.kt`, `.scala`, `.go`, `.ts`, `.js`, `.py`,
+`.cs`, `.rb`, `.rs`). Record the complete file list and total count. If no
+path was specified, scan the current working directory recursively.
+
+```
+glob('**/*.ts')   # replace with the extension(s) present in this codebase
+```
+
+Report: "Enumerated N files across M directories."
+
+### Step 2 — Classify files — do not skip based on filename alone
+
+Assign each file to one of these reading priorities based on its content, not
+its name. You must read a file to confirm it belongs in the Skippable category.
+
+**Priority 1 — Shared transport and cross-cutting infrastructure (read first)**
+Files that implement messaging, event dispatch, async execution wrappers, or
+interceptor/middleware chains that other code depends on. The identifying
+characteristic is: *a defect here propagates silently to every caller.* Signs
+when reading the file: publishes to a queue or topic, wraps calls in async
+fire-and-forget, has a no-op stub path for disabled integrations, swallows
+exceptions in a cross-cutting wrapper. Read these before any domain code —
+their defects explain patterns you will find later.
+
+**Priority 2 — Domain operations (read in module groups)**
+Files that orchestrate business logic — coordinating multiple calls, driving
+workflows, or implementing commands and event handlers. These are the primary
+locus of saga smells because they chain effects together.
+
+**Priority 3 — Skippable**
+Files with no executable logic: pure type or interface definitions, data-only
+structures with no methods, generated code, constant declarations. Confirm by
+reading before skipping — do not decide by filename alone. A file with a
+"plain data" name may contain a factory method or a lifecycle hook that crosses
+a trust boundary.
+
+### Step 3 — Read platform infrastructure first
+
+Infrastructure smells are high-leverage: one fire-and-forget publisher or
+one exception-swallowing aspect creates an invisible saga smell in every
+service that uses it. Always read infrastructure files before domain code.
+
+After reading each infrastructure file, ask: *does a defect here amplify
+callers?* If yes, note this before moving to domain modules — it will explain
+patterns you find later.
+
+### Step 4 — Read domain files module by module
+
+Within each module, start with files that appear to coordinate or orchestrate
+multiple operations, then read supporting files. Read every file — do not skip
+one because a previous file in the module "covered the pattern." The same
+infrastructure defect can manifest differently across multiple callers in the
+same module.
+
+### Step 5 — Completeness checkpoint
+
+Before writing any finding, output this block:
+
+```
+FILES ENUMERATED: N
+FILES READ: N
+FILES SKIPPED: N
+  - path/to/file.ext — reason (must be "no method bodies" or "pure read interface")
+INFRASTRUCTURE FILES READ:
+  - path/to/MessagePublisher.ext
+  - path/to/EventConsumer.ext
+  ...
+```
+
+If any infrastructure file was skipped, go back and read it now.
+
+---
 
 ## What is a saga smell?
 
@@ -463,7 +545,6 @@ ACH confidence: CONFIRMED | UNCERTAIN | POSSIBLE
 Competing hypotheses: <list only when confidence is UNCERTAIN or POSSIBLE, with the winning alternative and the evidence that supports it>
 To confirm: <only when UNCERTAIN or POSSIBLE — what additional evidence would resolve the ambiguity>
 Correction: <specific changes needed, referencing the correction template>
-Reference: <citation>
 ```
 
 When confidence is UNCERTAIN, prefix the header line: `⚠ POSSIBLE SAGA-SMELL [SEVERITY]`

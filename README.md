@@ -64,24 +64,28 @@ team members and CI have it automatically.
 
 ```bash
 # From your project root
-mkdir -p .claude/skills
-cp -r /path/to/saga-smell/skills/saga-smell .claude/skills/
-
-# Or clone directly into your project
 git clone https://github.com/johncoleman-thoughtworks/saga-smell-skill /tmp/saga-smell
+
+mkdir -p .claude/skills .claude/workflows
 cp -r /tmp/saga-smell/skills/saga-smell .claude/skills/
+cp /tmp/saga-smell/.claude/workflows/saga-smell.js .claude/workflows/
 ```
 
-The skill is now available to everyone working in this repository.
+The skill and workflow are now available to everyone working in this repository.
 
 ### Option B — user skill (available in all your projects)
 
 ```bash
-mkdir -p ~/.claude/skills
-cp -r /path/to/saga-smell/skills/saga-smell ~/.claude/skills/
+git clone https://github.com/johncoleman-thoughtworks/saga-smell-skill /tmp/saga-smell
+
+mkdir -p ~/.claude/skills ~/.claude/workflows
+cp -r /tmp/saga-smell/skills/saga-smell ~/.claude/skills/
+cp /tmp/saga-smell/.claude/workflows/saga-smell.js ~/.claude/workflows/
 ```
 
 ### Option C — install script (both options via flag)
+
+Installs the skill and the multi-agent workflow in one step.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/johncoleman-thoughtworks/saga-smell-skill/main/install.sh | bash
@@ -102,7 +106,7 @@ cp /path/to/saga-smell/.claude/commands/saga-smell.md .claude/commands/
 
 ## Usage
 
-### In Claude Code
+### Single file or pasted code
 
 ```
 # Analyse a specific file
@@ -119,6 +123,30 @@ cp /path/to/saga-smell/.claude/commands/saga-smell.md .claude/commands/
 "check the compensation logic in this handler"
 "distributed transaction review of paymentService"
 ```
+
+### Whole-codebase scan (multi-agent workflow)
+
+For large codebases, the workflow fans out one agent per module, reads every
+file in each module, runs an adversarial verification pass, and synthesises a
+root-cause-grouped report.
+
+```
+# Ask Claude directly:
+"run the saga-smell workflow on ./src"
+"saga smell deep scan of this codebase"
+```
+
+The workflow runs four phases:
+
+1. **Enumerate** — finds all source files and groups them by module, classifying
+   shared transport and cross-cutting infrastructure for priority reading
+2. **Analyze** — one agent per module reads every file and applies the detection
+   rules; infrastructure modules run first so their defects can be noted before
+   domain analysis begins
+3. **Verify** — a skeptic agent independently re-reads each module that had
+   findings, tries to refute them, and checks files the analysis agent marked clean
+4. **Synthesize** — merges all results, applies verification verdicts, deduplicates,
+   and groups findings by root cause pattern with recommended systemic fixes
 
 ### In CI (Anthropic API)
 
@@ -164,10 +192,12 @@ tool description. Input schema:
 saga-smell/
 ├── skills/
 │   └── saga-smell/
-│       └── SKILL.md                  # Skill entry point — rules and taxonomy inlined
+│       └── SKILL.md                  # Skill entry point — rules, taxonomy, and scanning protocol
 ├── .claude/
-│   └── commands/
-│       └── saga-smell.md             # Slash command wrapper
+│   ├── commands/
+│   │   └── saga-smell.md             # Slash command wrapper (single file / pasted code)
+│   └── workflows/
+│       └── saga-smell.js             # Multi-agent workflow (whole-codebase scan)
 ├── .github/
 │   └── workflows/
 │       └── saga-smell.yml            # CI integration example

@@ -24,25 +24,39 @@ done
 
 if $PROJECT; then
   SKILLS_DIR=".claude/skills"
+  WORKFLOWS_DIR=".claude/workflows"
+  COMMANDS_DIR=".claude/commands"
   echo "Installing saga-smell skill to project scope ($SKILLS_DIR)..."
 else
   SKILLS_DIR="$HOME/.claude/skills"
+  WORKFLOWS_DIR="$HOME/.claude/workflows"
+  COMMANDS_DIR="$HOME/.claude/commands"
   echo "Installing saga-smell skill to user scope ($SKILLS_DIR)..."
 fi
 
 mkdir -p "$SKILLS_DIR/$SKILL_NAME"
+mkdir -p "$WORKFLOWS_DIR"
 
-# Download skill file
+# Download skill file (single-file / pasted-code analysis)
 curl -fsSL "$RAW/skills/saga-smell/SKILL.md" \
   -o "$SKILLS_DIR/$SKILL_NAME/SKILL.md"
 
+# Download workflow (whole-codebase multi-agent scan)
+curl -fsSL "$RAW/.claude/workflows/saga-smell.js" \
+  -o "$WORKFLOWS_DIR/saga-smell.js"
+
 echo ""
 echo "✓ Skill installed to $SKILLS_DIR/$SKILL_NAME/"
+echo "✓ Workflow installed to $WORKFLOWS_DIR/saga-smell.js"
 echo ""
 echo "Usage in Claude Code:"
-echo "  /saga-smell src/services/orderService.ts"
-echo "  /saga-smell the processPayment function"
+echo "  /saga-smell src/services/orderService.ts   # single file"
+echo "  /saga-smell the processPayment function     # pasted code"
 echo "  Or just ask: 'review this for saga smells'"
+echo ""
+echo "For whole-codebase scans (multi-agent, exhaustive):"
+echo "  Ask Claude: 'run the saga-smell workflow on ./src'"
+echo "  Or: 'saga smell deep scan of this codebase'"
 echo ""
 echo "To also install the slash command:"
 if $PROJECT; then

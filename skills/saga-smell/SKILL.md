@@ -8,7 +8,7 @@ description: >
   I/O, processes payments, handles events, or coordinates across services.
   Trigger phrases: "review for saga smells", "check compensation", "saga
   review", "distributed transaction review", "check this for consistency issues".
-version: 1.2.0
+version: 1.3.0
 author: John Coleman
 license: MIT
 allowed-tools: Read, Grep, Glob
@@ -63,6 +63,73 @@ The pivot is the point of no return in a saga. Effects before the pivot can be
 compensated (backward recovery). Effects after the pivot must be retried to
 completion (forward recovery). A saga with no defined pivot is the most severe
 case: no recovery strategy can be reasoned about.
+
+---
+
+## ACH evaluation protocol
+
+Rule pattern matching alone produces false positives when compensation is
+provided by a framework, a transactional outbox, idempotency-by-design, or a
+higher-level coordinator not visible in the target scope. Apply this two-pass
+evaluation before reporting any finding.
+
+### Pass 1 — Fast path
+
+If **none** of the competing-hypothesis signals in the evidence matrix below
+appear in or near the candidate location, flag the finding directly at full
+severity. No further analysis needed.
+
+### Pass 2 — ACH evaluation
+
+If **any** competing-hypothesis signal is present, evaluate the full hypothesis
+set before reporting.
+
+**Step 1 — State the hypotheses.** For every candidate, exactly one of the
+following is true:
+
+| ID | Hypothesis |
+|---|---|
+| H_smell | Pattern represents a genuine structural defect — no compensation, ordering, or idempotency is present |
+| H_framework | A durable execution framework (Temporal, Restate, Golem, Conductor, AWS Step Functions) wraps all effects at a higher scope |
+| H_outbox | An atomic DB + outbox write is in place; a relay/CDC process handles publication (R3 candidates only) |
+| H_idempotent | All effects are designed to be safely retried without compensation |
+| H_step | This function is a deliberate saga step; the caller or orchestrator coordinates compensation |
+| H_2pc | An XA/2PC distributed transaction coordinator wraps all effects |
+
+**Step 2 — Build the evidence matrix.** Scan the candidate and its immediate
+call graph for each signal below. Mark each hypothesis + (supports) or −
+(refutes). Double-mark (++) for strong signals.
+
+| Evidence signal | H_smell | H_framework | H_outbox | H_idempotent | H_step | H_2pc |
+|---|---|---|---|---|---|---|
+| Framework import — Temporal, Restate, Golem, Conductor, Step Functions | − | ++ | | | | |
+| `workflow.*`, `activity.*`, `ctx.run(*)` method calls | − | ++ | | | | |
+| Outbox table write inside same DB transaction as the triggering write | − | | ++ | | | |
+| CDC relay or outbox publisher referenced nearby | − | | + | | | |
+| `idempotency_key` parameter passed to every effect | − | | | ++ | | |
+| Deduplication guard (`if seen(key) return`) before every effect | − | | | ++ | | |
+| All writes use upsert / insert-or-ignore semantics | | | | + | | |
+| Parameter named `sagaId`, `correlationId`, `stepId` accepted by function | | | | | + | |
+| Function or class name contains `step`, `activity`, `task`, `handler` | | | | | + | |
+| `@SagaStep`, `@Compensate`, `@Transactional` annotation on function | − | | | | + | + |
+| `XAResource`, `TransactionManager`, JTA/JTS import | − | | | | | ++ |
+| No try/catch, no framework import, no correlation ID — bare effect sequence | ++ | − | − | − | − | − |
+| Financial amount in play with no explicit refund/counter-entry path | ++ | | | | | |
+
+**Step 3 — Score and conclude.**
+
+1. The **winning hypothesis** is the one with the highest net support (plusses
+   minus minuses) after scanning all signals.
+2. If H_smell wins: flag at full severity. Set `ACH confidence: CONFIRMED`.
+3. If a competing hypothesis wins: flag at one severity tier lower with
+   `ACH confidence: UNCERTAIN`. Name the winning alternative and the evidence
+   that supports it. State what additional evidence would confirm or refute.
+4. If evidence is exactly tied: flag at current severity with
+   `ACH confidence: POSSIBLE`. Note the ambiguity explicitly.
+
+**Scope of the scan.** Scan the candidate function, its direct callers if
+visible, and any imports in the same file. Do not trace arbitrarily deep call
+graphs — flag H_step when compensation is plausibly present but not visible.
 
 ---
 
@@ -392,9 +459,15 @@ Effects:
   - Effect 2: <type> — <description>
 Missing: <what compensation/idempotency/ordering element is absent>
 Pivot defined: YES | NO | UNCLEAR
+ACH confidence: CONFIRMED | UNCERTAIN | POSSIBLE
+Competing hypotheses: <list only when confidence is UNCERTAIN or POSSIBLE, with the winning alternative and the evidence that supports it>
+To confirm: <only when UNCERTAIN or POSSIBLE — what additional evidence would resolve the ambiguity>
 Correction: <specific changes needed, referencing the correction template>
 Reference: <citation>
 ```
+
+When confidence is UNCERTAIN, prefix the header line: `⚠ POSSIBLE SAGA-SMELL [SEVERITY]`
+and reduce severity by one tier in the summary count.
 
 After all findings:
 

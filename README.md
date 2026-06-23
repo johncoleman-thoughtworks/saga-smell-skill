@@ -40,7 +40,7 @@ mkdir -p .claude/skills
 cp -r /path/to/saga-smell/skills/saga-smell .claude/skills/
 
 # Or clone directly into your project
-git clone https://github.com/<you>/saga-smell /tmp/saga-smell
+git clone https://github.com/johncoleman-thoughtworks/saga-smell-skill /tmp/saga-smell
 cp -r /tmp/saga-smell/skills/saga-smell .claude/skills/
 ```
 
@@ -56,9 +56,9 @@ cp -r /path/to/saga-smell/skills/saga-smell ~/.claude/skills/
 ### Option C — install script (both options via flag)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<you>/saga-smell/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/johncoleman-thoughtworks/saga-smell-skill/main/install.sh | bash
 # Or project-scoped:
-curl -fsSL https://raw.githubusercontent.com/<you>/saga-smell/main/install.sh | bash -s -- --project
+curl -fsSL https://raw.githubusercontent.com/johncoleman-thoughtworks/saga-smell-skill/main/install.sh | bash -s -- --project
 ```
 
 ### Option D — slash command only (no skill infrastructure needed)

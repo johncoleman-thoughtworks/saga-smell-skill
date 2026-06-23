@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # saga-smell installer
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/<you>/saga-smell/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/<you>/saga-smell/main/install.sh | bash -s -- --project
+#   curl -fsSL https://raw.githubusercontent.com/johncoleman-thoughtworks/saga-smell-skill/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/johncoleman-thoughtworks/saga-smell-skill/main/install.sh | bash -s -- --project
 
 set -euo pipefail
 
-REPO="https://github.com/<you>/saga-smell"
-RAW="https://raw.githubusercontent.com/<you>/saga-smell/main"
+REPO="https://github.com/johncoleman-thoughtworks/saga-smell-skill"
+RAW="https://raw.githubusercontent.com/johncoleman-thoughtworks/saga-smell-skill/main"
 SKILL_NAME="saga-smell"
 PROJECT=false
 

@@ -36,12 +36,9 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           SKILL=$(cat skills/saga-smell/SKILL.md)
-          RULES=$(cat skills/saga-smell/references/detection-rules.md)
           DIFF=$(cat diff.txt)
 
           SYSTEM_PROMPT="$SKILL
-
-$RULES
 
 You are reviewing a pull request diff. Analyse only the added lines (starting
 with +). Ignore test files. If no saga smells are found, respond with:

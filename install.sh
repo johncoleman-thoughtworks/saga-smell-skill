@@ -30,14 +30,11 @@ else
   echo "Installing saga-smell skill to user scope ($SKILLS_DIR)..."
 fi
 
-mkdir -p "$SKILLS_DIR/$SKILL_NAME/references"
+mkdir -p "$SKILLS_DIR/$SKILL_NAME"
 
-# Download skill files
+# Download skill file
 curl -fsSL "$RAW/skills/saga-smell/SKILL.md" \
   -o "$SKILLS_DIR/$SKILL_NAME/SKILL.md"
-
-curl -fsSL "$RAW/skills/saga-smell/references/detection-rules.md" \
-  -o "$SKILLS_DIR/$SKILL_NAME/references/detection-rules.md"
 
 echo ""
 echo "✓ Skill installed to $SKILLS_DIR/$SKILL_NAME/"

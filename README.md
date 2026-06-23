@@ -99,7 +99,6 @@ user message:
 
 ```bash
 SKILL=$(cat skills/saga-smell/SKILL.md)
-RULES=$(cat skills/saga-smell/references/detection-rules.md)
 DIFF=$(git diff origin/main)
 
 curl https://api.anthropic.com/v1/messages \
@@ -109,7 +108,7 @@ curl https://api.anthropic.com/v1/messages \
   -d '{
     "model": "claude-sonnet-4-6",
     "max_tokens": 4096,
-    "system": "'"$SKILL\n\n$RULES"'",
+    "system": "'"$SKILL"'",
     "messages": [{"role": "user", "content": "'"$DIFF"'"}]
   }'
 ```
@@ -137,9 +136,7 @@ tool description. Input schema:
 saga-smell/
 ├── skills/
 │   └── saga-smell/
-│       ├── SKILL.md                  # Claude Code skill entry point
-│       └── references/
-│           └── detection-rules.md    # Full rules, loaded dynamically
+│       └── SKILL.md                  # Skill entry point — rules and taxonomy inlined
 ├── .claude/
 │   └── commands/
 │       └── saga-smell.md             # Slash command wrapper
@@ -163,7 +160,7 @@ Pull requests welcome for:
 - CI integration examples beyond GitHub Actions
 
 Rules must cite a scholarly or primary source in the reference section.
-See `skills/saga-smell/references/detection-rules.md` for the format.
+See the references section at the bottom of `skills/saga-smell/SKILL.md` for the format.
 
 ---
 
